@@ -126,6 +126,11 @@ This project has been a valuable learning experience, particularly in understand
 
 The project is currently working well, providing a functional and interactive AI therapist experience, but needs substantial updates for increasing speed of giving responses as currently it is sending file to the frontend when the whole file is generated, but we can stream the audio to the frontend as it is being produced providing massive speedboost.
 
+##Check More About 2D Character Animations
+
+Live2D SDK:  * [Live2D](https://www.live2d.com/en/)
+
+Live2D Sample data:  * [Live2D Sample Data](https://www.live2d.com/en/learn/sample/)
 
 ## Disclaimer
 

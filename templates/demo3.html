@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Therapist - Dashboard</title> 
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  body > canvas {
+    pointer-events: none;
+ }
+
+  body {
+    background-color: #CB1B45;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: 70px; 
+    box-sizing: border-box;
+  }
+
+  .main-header {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+
+    background-color: #a21537; 
+    background-image: linear-gradient(to bottom, #a21537, #CB1B45);
+    padding: 10px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center; 
+    box-sizing: border-box;
+    height: 90px;
+  }
+
+  .main-header h1 {
+    color: #FEDFE1;
+    font-size: 2.2em;
+    margin: 0;
+  }
+
+  .dropdown-container {
+    position: relative; 
+  }
+
+  .dropdown-toggle {
+    background: none;
+    border: none;
+    color: #FEDFE1;
+    font-size: 1.8em; 
+    cursor: pointer;
+    padding: 5px 10px;
+    line-height: 1; 
+  }
+
+  .dropdown-toggle:hover {
+      color: #ffffff; 
+  }
+
+  .dropdown-menu {
+    display: block;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #ffffff; 
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    min-width: 160px;
+    padding: 8px 0;
+    list-style: none;
+    margin: 5px 0 0 0;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px); 
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+    z-index: 801;
+  }
+
+  .dropdown-menu.open { 
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .dropdown-menu a {
+    display: block; 
+    padding: 10px 15px; 
+    color: #333;
+    text-decoration: none;
+    font-size: 0.95em;
+    white-space: nowrap;
+  }
+
+  .dropdown-menu a:hover {
+    background-color: #f0f0f0;
+    color: #CB1B45;
+  }
+
+  #main-content {
+    flex-grow: 1;
+     width: 100%;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+  }
+
+  #recordBtn {
+    padding: 12px 25px; 
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #F8C3CD;
+    color: #a21537;
+    border: none;
+    cursor: pointer;
+    position: fixed;
+    border-radius: 5px;
+    bottom: 30px;
+    left: 30px;
+    margin: 0;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 800;
+  }
+
+  #recordBtn:hover {
+    background-color: #e9a7b6;
+    transform: translateY(-2px); 
+    box-shadow: 0px 7px 18px rgba(0, 0, 0, 0.25);
+  }
+
+  #recordBtn:active {
+    background-color: #d78ca0; 
+    transform: translateY(0px); 
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  #recordBtn[style*="background-color: rgb(220, 53, 69)"],
+  #recordBtn[style*="background-color: #dc3545"] {
+      background-color: #dc3545 !important;
+      color: white !important;
+  }
+
+  #transcription {
+    color: #FEDFE1; 
+    position: fixed;
+    bottom: 85px;
+    left: 30px;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 0.9em;
+    max-width: 300px;
+    z-index: 799;
+  }
+</style>
+
+<script src="{{ url_for('static', filename='core/live2dcubismcore.js') }}"></script>
+<script type="module" crossorigin src="{{ url_for('static', filename='assets/index-ccc.js') }}"></script>
+<script>
+  function triggerFunction() {
+      fetch('/trigger', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          }
+      })
+  }
+</script>
+<script>
+  function triggerFunction2() {
+      fetch('/trigger2', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          }
+      })
+  }
+</script>
+
+</head>
+<body>
+  <header class="main-header">
+    <h1>AI Therapist</h1>
+    <div class="dropdown-container">
+      <button class="dropdown-toggle" id="menuBtn" aria-label="Open Menu">☰</button>
+      <div class="dropdown-menu" id="menuDropdown">
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div id="main-content">
+  </div>
+
+  <button id="recordBtn">Start Recording</button>
+
+  <p id="transcription"></p>
+
+    <script>
+      let recognition;
+      let isRecording = false;
+      let silenceTimer;
+      let fullTranscript = "";
+      let hasSent = false;
+
+      const menuBtn = document.getElementById('menuBtn');
+      const menuDropdown = document.getElementById('menuDropdown');
+
+      menuBtn.addEventListener('click', (event) => {
+          event.stopPropagation(); 
+          menuDropdown.classList.toggle('open');
+      });
+
+      document.addEventListener('click', (event) => {
+          if (menuDropdown.classList.contains('open') && !menuDropdown.contains(event.target) && event.target !== menuBtn) {
+              menuDropdown.classList.remove('open');
+          }
+      });
+
+
+      window.onload = () => {
+          if (menuDropdown.classList.contains('open')) {
+              menuDropdown.classList.remove('open');
+          }
+
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (SpeechRecognition) {
+              recognition = new SpeechRecognition();
+              recognition.lang = "en-US";
+          } else {
+              console.error("Speech Recognition API not supported in this browser.");
+              document.getElementById("recordBtn").disabled = true;
+              document.getElementById("recordBtn").innerText = "Not Supported";
+          }
+      };
+      document.getElementById("recordBtn").addEventListener("click", () => {
+          if (!recognition) {
+              console.error("Recognition object not initialized.");
+              return;
+          }
+
+          if (!isRecording) {
+              startRecognition();
+          } else {
+              stopRecognition();
+          }
+      });
+
+      function startRecognition() {
+          if (!recognition || isRecording) {
+              return;
+          }
+
+          console.log("Starting recognition...");
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.lang = "en-US";
+
+          fullTranscript = "";
+          hasSent = false;
+          document.getElementById("transcription").innerText = "Listening...";
+
+          recognition.onresult = (event) => {
+              clearTimeout(silenceTimer);
+
+              let interimTranscript = "";
+              for (let i = event.resultIndex; i < event.results.length; i++) {
+                  const transcriptPart = event.results[i][0].transcript;
+                  if (event.results[i].isFinal) {
+                      fullTranscript += transcriptPart + " ";
+                  } else {
+                      interimTranscript += transcriptPart;
+                  }
+              }
+
+              document.getElementById("transcription").innerText = fullTranscript + interimTranscript;
+              resetSilenceTimer();
+          };
+
+          recognition.onerror = (event) => {
+              console.error("Speech recognition error:", event.error);
+              if (event.error === 'no-speech') {
+                  console.log("No speech detected.");
+              } else if (event.error === 'audio-capture') {
+                  console.error("Audio capture error. Check microphone permissions.");
+              } else if (event.error === 'not-allowed') {
+                  console.error("Microphone permission denied.");
+              }
+               if (recognition) {
+                   recognition.stop(); 
+               }
+          };
+          recognition.onend = () => {
+              console.log("Recognition ended.");
+              isRecording = false;
+              clearTimeout(silenceTimer);
+              if (!hasSent && fullTranscript.trim() !== "") {
+                  console.log("Sending final transcript:", fullTranscript);
+                  sendToFlask(fullTranscript);
+                  hasSent = true;
+              } else if (hasSent) {
+                  console.log("Transcript already sent or nothing to send.");
+              } else {
+                   console.log("No final transcript to send.");
+              }
+
+              const recordBtn = document.getElementById("recordBtn");
+              recordBtn.innerText = "Start Recording";
+              recordBtn.style.backgroundColor = "";
+              recordBtn.style.color = "";
+
+              setTimeout(() => {
+                   if (!isRecording) {
+                    document.getElementById("transcription").innerText = "";
+                   }
+               }, 1500);
+          };
+          try {
+              recognition.start();
+              isRecording = true;
+              const recordBtn = document.getElementById("recordBtn");
+              recordBtn.innerText = "Stop Recording";
+              recordBtn.style.backgroundColor = "#dc3545";
+              recordBtn.style.color = "white";
+
+              resetSilenceTimer();
+          } catch (e) {
+              console.error("Error starting recognition:", e);
+               isRecording = false;
+               const recordBtn = document.getElementById("recordBtn");
+               recordBtn.innerText = "Start Recording";
+               recordBtn.style.backgroundColor = "";
+               recordBtn.style.color = "";
+          }
+      }
+
+      function stopRecognition() {
+          if (!isRecording || !recognition) {
+              return;
+          }
+          console.log("Requesting recognition stop...");
+          clearTimeout(silenceTimer);
+          recognition.stop();
+      }
+
+      function resetSilenceTimer() {
+          clearTimeout(silenceTimer);
+          silenceTimer = setTimeout(() => {
+              console.log("Silence detected, stopping recognition.");
+              if (isRecording) {
+                  stopRecognition();
+              }
+          }, 5000);
+      }
+
+      function sendToFlask(text) {
+          console.log("Sending to Flask:", text);
+          fetch("/process_speech", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ transcript: text })
+          })
+          .then(response => { 
+              if (!response.ok) {
+                  console.error("Error sending transcript to Flask:", response.statusText);
+              } else {
+                  console.log("Transcript sent successfully.");
+              }
+          })
+          .catch(error => {
+              console.error("Fetch error sending transcript:", error);
+          });
+      }
+  </script>
+  </body>
+</html>

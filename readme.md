@@ -19,7 +19,9 @@ The core idea behind Serena is to address common limitations in traditional ther
 *   **Secure User Management:** Features include robust login and registration processes with user authentication, securely saving user information in an SQLite database.
 *   **Advanced AI Capabilities:** Powered by state-of-the-art Large Language Models for empathetic and context-aware responses.
 
-<img src="sample/2.gif" alt="Demonstration GIF" style="float: right; margin-left: 20px; max-width: 400px; height: auto;">
+<div align="center">
+  <img src="sample/2.gif">
+</div>
 
 ### Real-time Interaction
 
@@ -28,8 +30,6 @@ Serena is designed for dynamic and immersive interactions. This project features
 The animated character, currently a charming cat model, provides real-time lipsync, making the interaction feel incredibly natural and engaging. This visual feedback enhances the user experience, providing a sense of connection and presence during your therapeutic conversations.
 
 This seamless integration of audio processing, AI response, and visual animation creates a unique and effective way to engage with an AI therapist.
-
-<div style="clear: both;"></div>
 
 ### Frontend
 
